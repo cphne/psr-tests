@@ -1,0 +1,23 @@
+{
+    "name": "cphne/psr-tests",
+    "description": "Testing ground for PSR recommendations",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Cphne\\PsrTests\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Christopher Neven",
+            "email": "cph.neven@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "psr/http-message": "1.0.x-dev",
+        "psr/http-server-handler": "1.0.x-dev",
+        "psr/http-factory": "1.0.x-dev"
+    }
+}

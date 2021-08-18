@@ -1,19 +1,26 @@
 <?php
 
-
 namespace Cphne\PsrTests\HTTP;
+
+
 
 
 use Psr\Http\Message\StreamInterface;
 use RuntimeException;
 
-class Stream implements StreamInterface
-{
-
+/**
+ * Class Stream
+ * @package Cphne\PsrTests\HTTP
+ */
+class Stream implements StreamInterface{
     private $resource;
 
     private array|false $stats = false;
 
+    /**
+     * Stream constructor.
+     * @param null $body
+     */
     public function __construct($body = null)
     {
         $this->resource = (!is_null($body)) ? $body : fopen('php://input', 'rb');
@@ -21,7 +28,9 @@ class Stream implements StreamInterface
 
     public function __destruct()
     {
-        $this->close();
+        if (is_resource($this->resource)) {
+            $this->close();
+        }
     }
 
     /**
@@ -151,7 +160,7 @@ class Stream implements StreamInterface
             $data .= $buffer;
         }
         if (!$buffer) {
-            throw new RuntimeException("Error while reading data from Stream!");
+            throw new RuntimeException("Error while reading data from StreamFactory!");
         }
         return $data;
     }
@@ -165,7 +174,7 @@ class Stream implements StreamInterface
         while (!$this->eof()) {
             $buffer = fgets($this->resource);
             if (!$buffer) {
-                throw new RuntimeException("Error while reading data from Stream!");
+                throw new RuntimeException("Error while reading data from StreamFactory!");
             }
             $data .= $buffer;
         }
@@ -180,5 +189,4 @@ class Stream implements StreamInterface
         $meta = stream_get_meta_data($this->resource);
         return (is_null($key)) ? $meta : $meta[$key];
     }
-
 }

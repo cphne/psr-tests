@@ -6,36 +6,48 @@ use Cphne\PsrTests\HTTP\Stream;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\StreamInterface;
 
+/**
+ * Class StreamFactory.
+ */
 class StreamFactory implements StreamFactoryInterface
 {
     /**
      * {@inheritDoc}
+     * @deprecated use Factory instead
      */
     public function createStream(string $content = ''): StreamInterface
     {
-        // TODO check fopen
         $stream = fopen('php://temp', 'rb+');
+        if (!is_resource($stream)) {
+            throw new \LogicException('PHP temp resource could not be opened');
+        }
         fwrite($stream, $content);
         fseek($stream, 0);
 
-        return new Stream($stream);
+        return $this->createStreamFromResource($stream);
     }
 
     /**
      * {@inheritDoc}
+     * @deprecated use Factory instead
      */
     public function createStreamFromFile(string $filename, string $mode = 'r'): StreamInterface
     {
-        throw new \Exception('Not implemented yet!');
-        // TODO: Implement createStreamFromFile() method.
+        $file = fopen($filename, $mode.'b');
+
+        return $this->createStreamFromResource($file);
     }
 
     /**
      * {@inheritDoc}
+     * @deprecated use Factory instead
      */
     public function createStreamFromResource($resource): StreamInterface
     {
-        // TODO: Implement createStreamFromResource() method.
-        throw new \Exception('Not implemented yet!');
+        if (!is_resource($resource)) {
+            throw new \InvalidArgumentException('Resource is not a valid resource.');
+        }
+
+        return new Stream($resource);
     }
 }

@@ -6,15 +6,67 @@ namespace Cphne\PsrTests\HTTP;
 
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Class Uri
+ * @package Cphne\PsrTests\HTTP
+ */
 class Uri implements UriInterface
 {
+
+    private array $portMapping = [
+        "acap" => 674,
+        "afp" => 548,
+        "dict" => 2628,
+        "dns" => 53,
+        "file" => null,
+        "ftp" => 21,
+        "git" => 9418,
+        "gopher" => 70,
+        "http" => 80,
+        "https" => 443,
+        "imap" => 143,
+        "ipp" => 631,
+        "ipps" => 631,
+        "irc" => 194,
+        "ircs" => 6697,
+        "ldap" => 389,
+        "ldaps" => 636,
+        "mms" => 1755,
+        "msrp" => 2855,
+        "msrps" => null,
+        "mtqp" => 1038,
+        "nfs" => 111,
+        "nntp" => 119,
+        "nntps" => 563,
+        "pop" => 110,
+        "prospero" => 1525,
+        "redis" => 6379,
+        "rsync" => 873,
+        "rtsp" => 554,
+        "rtsps" => 322,
+        "rtspu" => 5005,
+        "sftp" => 22,
+        "smb" => 445,
+        "snmp" => 161,
+        "ssh" => 22,
+        "steam" => null,
+        "svn" => 3690,
+        "telnet" => 23,
+        "ventrilo" => 3784,
+        "vnc" => 5900,
+        "wais" => 210,
+        "ws" => 80,
+        "wss" => 443,
+        "xmpp" => null
+    ];
+
     /**
      * Uri constructor.
      * @param string $scheme
      * @param string|null $user
      * @param string|null $pass
      * @param string $host
-     * @param string $port
+     * @param int|null $port
      * @param string $path
      * @param string|null $query
      * @param string|null $fragment
@@ -24,13 +76,17 @@ class Uri implements UriInterface
         protected ?string $user,
         protected ?string $pass,
         protected string $host,
-        protected string $port,
+        protected ?int $port,
         protected string $path,
         protected ?string $query,
         protected ?string $fragment
     ) {
     }
 
+    /**
+     * @param array $server
+     * @return static
+     */
     public static function fromServer(array $server)
     {
         $uri = self::getFullUri($server);
@@ -61,7 +117,11 @@ class Uri implements UriInterface
      */
     public function getAuthority()
     {
-        return $this->user . '@' . $this->host . ':' . $this->port;
+        $authority = $this->user . '@' . $this->host; // . ':' . $this->port;
+        if ($this->isStandardPort()) {
+            return $authority;
+        }
+        return $authority . ":" . $this->port;
     }
 
     /**
@@ -69,7 +129,11 @@ class Uri implements UriInterface
      */
     public function getUserInfo()
     {
-        return $this->user . (!empty($this->pass)) ? ":" . $this->pass : "";
+        $userInfo = $this->user ?? "";
+        if (!empty($this->pass)) {
+            $userInfo .= ":" . $this->pass;
+        }
+        return $userInfo;
     }
 
     /**
@@ -85,7 +149,7 @@ class Uri implements UriInterface
      */
     public function getPort()
     {
-        return $this->port ?? "";
+        return ($this->isStandardPort()) ? null : $this->port;
     }
 
     /**
@@ -168,6 +232,9 @@ class Uri implements UriInterface
      */
     public function withPort($port)
     {
+        if ($port < 0 || $port > 65353) {
+            throw new \InvalidArgumentException("Port must be inside the established range.");
+        }
         return new static(
             $this->scheme,
             $this->user,
@@ -236,10 +303,16 @@ class Uri implements UriInterface
      */
     public function __toString()
     {
-        return $this->scheme . "\\" .
-            $this->host . ":" . $this->port . "/" .
-            $this->path . "?" . $this->query . '#' .
-            $this->fragment;
+        $uri = $this->scheme . "://";
+        $userInfo = $this->getUserInfo();
+        $uri .= $userInfo . ((!empty($userInfo)) ? "@" : "");
+        $uri .= $this->host;
+        $uri .= (!empty($this->port)) ? ":" . $this->port : "";
+        $uri .= !str_starts_with($this->path, "/") && !empty($this->path)? "/" : "";
+        $uri .= $this->path;
+        $uri .= (!empty($this->query)) ? "?" . $this->query : "";
+        $uri .= (!empty($this->fragment)) ? "#" . $this->fragment : "";
+        return $uri;
     }
 
     protected static function getFullUri(array $server): string
@@ -253,5 +326,12 @@ class Uri implements UriInterface
         $host = ($use_forwarded_host && isset($server['HTTP_X_FORWARDED_HOST'])) ? $server['HTTP_X_FORWARDED_HOST'] : (isset($server['HTTP_HOST']) ? $server['HTTP_HOST'] : null);
         $host = $host ?? ($server['SERVER_NAME'] . $port);
         return $protocol . '://' . $host . $server['REQUEST_URI'];
+    }
+
+    protected function isStandardPort(): bool
+    {
+        return !empty($this->port) && !empty($this->scheme) && $this->portMapping[strtolower(
+                $this->scheme
+            )] === $this->port;
     }
 }

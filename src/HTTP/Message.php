@@ -9,16 +9,13 @@ use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
 
-
 /**
  * Class Message
  * @package Cphne\PsrTests\HTTP
  */
-class Message implements MessageInterface  {
-    // SERVER constants
+class Message implements MessageInterface
+{
     public const SERVER_PROTOCOL_VERSION = "SERVER_PROTOCOL";
-
-    protected string $protocolVersion;
 
     protected array $headers;
 
@@ -26,11 +23,13 @@ class Message implements MessageInterface  {
      * Message constructor.
      * @param StreamInterface $body
      * @param array $headers
-     * @param array $server
+     * @param string $protocolVersion
      */
-    public function __construct(protected StreamInterface $body, array $headers = [], array $server = [])
-    {
-        $this->setProtocolVersion($server[self::SERVER_PROTOCOL_VERSION] ?? "");
+    public function __construct(
+        protected StreamInterface $body,
+        array $headers = [],
+        protected string $protocolVersion = "1.1"
+    ) {
         $this->setHeaders($headers);
     }
 
@@ -153,17 +152,6 @@ class Message implements MessageInterface  {
         return $new;
     }
 
-    /**
-     * @param string $protocolVersion
-     */
-    protected function setProtocolVersion(string $protocolVersion): void
-    {
-        if (str_starts_with($protocolVersion, "HTTP/")) {
-            $this->protocolVersion = substr($protocolVersion, -3);
-        } else {
-            $this->protocolVersion = $protocolVersion;
-        }
-    }
 
     protected function setHeaders(array $headers)
     {

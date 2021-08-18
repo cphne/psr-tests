@@ -6,42 +6,62 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Class Request.
+ */
 class Request extends Message implements RequestInterface
 {
 
-    public const SERVER_REQUEST_URI = "REQUEST_URI";
-    public const SERVER_REQUEST_METHOD = "REQUEST_METHOD";
+    protected ?string $requestTarget = null;
 
-    protected UriInterface $uri;
-
-    public function __construct(array $server = [], array $headers = [], StreamInterface|string|null $body = null, UriInterface $uri = null)
-    {
-        $this->uri = $uri ?? Uri::fromServer($server);
-        parent::__construct($server, $headers, $body);
+    public function __construct(
+        protected string $method,
+        private UriInterface $uri,
+        StreamInterface $body,
+        array $headers = [],
+        string $protocolVersion = '1.1'
+    ) {
+        parent::__construct($body, $headers, $protocolVersion);
     }
 
     public function getRequestTarget()
     {
-        return $this->server[self::SERVER_REQUEST_URI] ?? "/";
+        if (!is_null($this->requestTarget)) {
+            return $this->requestTarget;
+        }
+        $target = $this->uri->getPath();
+        if ($target === '') {
+            $target = '/';
+        }
+        if ($this->uri->getQuery() !== '') {
+            $target .= '?' . $this->uri->getQuery();
+        }
+
+        return $target;
     }
 
     public function withRequestTarget($requestTarget)
     {
-        $server = $this->server;
-        $server[self::SERVER_REQUEST_URI] = $requestTarget;
-        return new static($server, $this->headers, $this->body);
+        $new = clone $this;
+        $new->requestTarget = $requestTarget;
+        return $new;
     }
 
+    /**
+     * Retrieves the HTTP method of the request.
+     *
+     * @return string Returns the request method.
+     */
     public function getMethod()
     {
-        return $this->server[self::SERVER_REQUEST_METHOD];
+        return $this->method;
     }
 
     public function withMethod($method)
     {
-        $server = $this->server;
-        $server[self::SERVER_REQUEST_METHOD] = $method;
-        return new static($server, $this->headers, clone $this->body);
+        $new = clone $this;
+        $new->method = $method;
+        return $new;
     }
 
     public function getUri()
@@ -51,10 +71,11 @@ class Request extends Message implements RequestInterface
 
     public function withUri(UriInterface $uri, $preserveHost = false)
     {
-        if(($preserveHost && !empty($this->getUri()->getHost())) || empty($uri->getHost())) {
+        if (($preserveHost && !empty($this->getUri()->getHost())) || empty($uri->getHost())) {
             $uri = $uri->withHost($this->getUri()->getHost());
         }
-        return new static($this->server, $this->headers, $this->body, $uri);
+        $new = clone $this;
+        $new->uri = $uri;
+        return $new;
     }
-
 }

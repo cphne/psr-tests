@@ -11,18 +11,22 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface
 {
+
+    public function __construct(
+        private Factory $factory
+    ) {
+    }
+
     /**
      * {@inheritDoc}
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $factory = new Factory();
-        $response = $factory->createResponse(200);
+        $response = $this->factory->createResponse();
         $response = $response->withBody(
-            $factory->createStream(json_encode(['this' => 'is', 'a' => 'success']))
+            $this->factory->createStream(sprintf('<p>%s</p>', "ok!"))
         )
-            ->withAddedHeader('Content-Type', 'application/json')
-        ;
+            ->withAddedHeader('Content-Type', 'text/html');
 
         $this->sendResponse($response);
 
@@ -33,9 +37,9 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface
     {
         http_response_code($response->getStatusCode());
         foreach ($response->getHeaders() as $name => $value) {
-            header($name.': '.implode(', ', $value), true, $response->getStatusCode());
+            header($name . ': ' . implode(', ', $value), true, $response->getStatusCode());
         }
-        echo (string) $response->getBody();
+        echo (string)$response->getBody();
 
         return true;
     }

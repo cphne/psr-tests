@@ -74,4 +74,15 @@ class FactoryTest extends TestCase
         $this->expectExceptionMessage('$uri must be either one of string or '.UriInterface::class);
         $this->factory->createRequest('POST', null);
     }
+
+    public function testCreateUploadedFile()
+    {
+        $body = $this->factory->createStream('Foo');
+        $file = $this->factory->createUploadedFile($body, 5, UPLOAD_ERR_OK, 'Foo', 'Bar');
+        self::assertSame('Foo', (string) $file->getStream()->getContents());
+        self::assertSame(5, $file->getSize());
+        self::assertSame(UPLOAD_ERR_OK, $file->getError());
+        self::assertSame('Foo', $file->getClientFilename());
+        self::assertSame('Bar', $file->getClientMediaType());
+    }
 }

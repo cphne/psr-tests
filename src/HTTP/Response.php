@@ -93,7 +93,7 @@ class Response extends Message implements ResponseInterface
         string $protocolVersion = "1.1"
     ) {
         parent::__construct($body, $this->headers, $protocolVersion);
-        $this->reasonPhrase = empty($reasonPhrase) ? $this->phrases[$this->statusCode] : $reasonPhrase; // TODO Check default phrase
+        $this->reasonPhrase = empty($reasonPhrase) ? $this->phrases[$this->statusCode] : $reasonPhrase;
     }
 
     /**

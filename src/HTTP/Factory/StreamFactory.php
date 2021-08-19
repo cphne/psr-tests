@@ -17,7 +17,7 @@ class StreamFactory implements StreamFactoryInterface
      */
     public function createStream(string $content = ''): StreamInterface
     {
-        $stream = fopen('php://temp', 'rb+');
+        $stream = fopen('php://temp', 'w+b');
         if (!is_resource($stream)) {
             throw new \LogicException('PHP temp resource could not be opened');
         }

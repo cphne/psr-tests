@@ -7,8 +7,12 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestFactoryInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UploadedFileFactoryInterface;
+use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 
@@ -19,17 +23,19 @@ class Factory implements
     UriFactoryInterface,
     ResponseFactoryInterface,
     RequestFactoryInterface,
-    StreamFactoryInterface
+    StreamFactoryInterface,
+    UploadedFileFactoryInterface,
+    ServerRequestFactoryInterface
 {
     public function createUri(string $uri = ''): UriInterface
     {
         $data = parse_url($uri);
 
         return new Uri(
-            $data['scheme'],
+            $data['scheme'] ?? '',
             $data['user'] ?? null,
             $data['pass'] ?? null,
-            $data['host'],
+            $data['host'] ?? '',
             $data['port'] ?? null,
             $data['path'] ?? '',
             $data['query'] ?? null,
@@ -95,5 +101,47 @@ class Factory implements
         $factory = new StreamFactory();
 
         return $factory->createStreamFromResource($resource);
+    }
+
+    public function createUploadedFile(
+        StreamInterface $stream,
+        int $size = null,
+        int $error = \UPLOAD_ERR_OK,
+        string $clientFilename = null,
+        string $clientMediaType = null
+    ): UploadedFileInterface {
+        if (!$stream->isReadable()) {
+            throw new \InvalidArgumentException('Stream of UploadedFile must be readable!');
+        }
+        $size ??= $stream->getSize();
+
+        return new UploadedFile(
+            $stream,
+            $size,
+            $error,
+            $clientFilename,
+            $clientMediaType
+        );
+    }
+
+    public function createServerRequest(string $method, $uri, array $serverParams = []): ServerRequestInterface
+    {
+        $uri = ($uri instanceof UriInterface) ? $uri : $this->createUri($uri);
+
+        return new ServerRequest(
+            $method,
+            $uri,
+            $this->createStream(''),
+            $serverParams
+        );
+    }
+
+    public function createServerRequestFromGlobals()
+    {
+        return $this->createServerRequest(
+            $_SERVER['REQUEST_METHOD'],
+            Uri::fromServer($_SERVER),
+            $_SERVER
+        );
     }
 }

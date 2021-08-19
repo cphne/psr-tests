@@ -56,7 +56,7 @@ class Stream implements StreamInterface{
     public function detach()
     {
         $result = $this->resource;
-        unset($this->resource);
+        $this->resource = null;
         $this->stats = false;
         return $result;
     }
@@ -131,7 +131,7 @@ class Stream implements StreamInterface{
      */
     public function isWritable()
     {
-        // TODO: Implement isWritable() method.
+        return is_writable($this->resource);
     }
 
     /**
@@ -147,7 +147,7 @@ class Stream implements StreamInterface{
      */
     public function isReadable()
     {
-        // TODO: Implement isReadable() method.
+        return is_readable($this->resource);
     }
 
     /**
@@ -156,11 +156,11 @@ class Stream implements StreamInterface{
     public function read($length): string
     {
         $data = "";
-        while (($buffer = fgets($this->resource, $length)) !== false) {
+        while (!$this->eof() && ($buffer = fgets($this->resource, $length)) !== false) {
             $data .= $buffer;
         }
         if (!$buffer) {
-            throw new RuntimeException("Error while reading data from StreamFactory!");
+            throw new RuntimeException("Error while reading data from Stream!");
         }
         return $data;
     }
@@ -171,11 +171,7 @@ class Stream implements StreamInterface{
     public function getContents(): string
     {
         $data = "";
-        while (!$this->eof()) {
-            $buffer = fgets($this->resource);
-            if (!$buffer) {
-                throw new RuntimeException("Error while reading data from StreamFactory!");
-            }
+        while (!$this->eof() && ($buffer = fgets($this->resource)) !== false) {
             $data .= $buffer;
         }
         return $data;

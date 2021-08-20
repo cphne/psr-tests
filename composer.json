@@ -17,15 +17,16 @@
     "scripts": {
         "php-cs-fixer": "php-cs-fixer --config=./.php-cs-fixer.php"
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "require": {
-        "psr/http-message": "1.0.x-dev",
-        "psr/http-server-handler": "1.0.x-dev",
-        "psr/http-factory": "1.0.x-dev",
-        "psr/cache": "3.0.x-dev"
+        "psr/http-message": "1.0.x",
+        "psr/http-server-handler": "1.0.x",
+        "psr/http-factory": "1.0.x",
+        "psr/cache": "3.0.x",
+        "psr/log": "^3.0",
+        "psr/container": "^2.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9",
-        "friendsofphp/php-cs-fixer": "v2.19.1"
+        "phpunit/phpunit": "^9"
     }
 }

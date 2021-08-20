@@ -3,6 +3,7 @@
 namespace Cphne\PsrTests\Server;
 
 use Cphne\PsrTests\HTTP\Factory;
+use Cphne\PsrTests\Logger\StdoutLogger;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -13,7 +14,8 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface
 {
 
     public function __construct(
-        private Factory $factory
+        private Factory $factory,
+        private StdoutLogger $logger
     ) {
     }
 
@@ -23,6 +25,7 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $response = $this->factory->createResponse();
+        $this->logger->info("Hello from " . __CLASS__);
         $response = $response->withBody(
             $this->factory->createStream(sprintf('<p>%s</p>', "ok!"))
         )

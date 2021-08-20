@@ -2,16 +2,22 @@
 
 namespace Cphne\PsrTests\Server;
 
+use Cphne\PsrTests\Container\ServiceCainInterface;
 use Cphne\PsrTests\HTTP\Factory;
 use Cphne\PsrTests\Logger\StdoutLogger;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
 
 /**
  * Class RequestHandler.
  */
-class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface
+class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, ServiceCainInterface
 {
+
+    private array $middleware = [];
+
+    private ResponseInterface $response;
 
     public function __construct(
         private Factory $factory,
@@ -24,17 +30,50 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $response = $this->factory->createResponse();
-        $this->logger->info("Hello from " . __CLASS__);
-        $response = $response->withBody(
-            $this->factory->createStream(sprintf('<p>%s</p>', "ok!"))
-        )
-            ->withAddedHeader('Content-Type', 'text/html');
+        $this->response = $this->factory->createResponse();
+        try {
+            foreach ($this->middleware as $middleware) {
+                /* @var $middleware MiddlewareInterface */
+                $this->response = $middleware->process($request, $this);
+                if ($this->response->isProcessingFinished()) {
+                    break;
+                }
+            }
+            $this->sendResponse($this->response);
+        } catch (\Throwable $exception) {
+            $code = $exception->getCode();
+            if ($code === 0) {
+                $code = 500;
+            }
+            $content = sprintf(
+                "<h1>%s - %s</h1><h2>%s</h2><hr>%s",
+                $code,
+                get_class($exception),
+                $exception->getMessage(),
+                $exception->getTraceAsString()
+            );
+            $response = $this->factory->createResponse($code)
+                ->withBody($this->factory->createStream($content));
+            $this->sendResponse($response);
+        }
 
-        $this->sendResponse($response);
-
-        return $response;
+        return $this->response;
     }
+
+
+    public function getChains(): array
+    {
+        return [self::TAG_MIDDLEWARE => "addMiddleware"];
+    }
+
+    /**
+     * @param MiddlewareInterface $middleware
+     */
+    public function addMiddleware(MiddlewareInterface $middleware)
+    {
+        $this->middleware[] = $middleware;
+    }
+
 
     private function sendResponse(ResponseInterface $response): bool
     {
@@ -46,4 +85,14 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface
 
         return true;
     }
+
+    /**
+     * @return ResponseInterface
+     */
+    public function getResponse(): ResponseInterface
+    {
+        return $this->response;
+    }
+
+
 }

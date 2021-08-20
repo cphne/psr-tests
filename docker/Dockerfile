@@ -7,4 +7,4 @@ RUN pecl install xdebug \
     && docker-php-ext-enable xdebug
 COPY .. /code
 WORKDIR /code
-CMD ["php", "-S", "0.0.0.0:8000", "index.php"]
+CMD ["php", "-S", "0.0.0.0:8000", "public/index.php"]

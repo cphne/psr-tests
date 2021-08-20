@@ -4,18 +4,36 @@ namespace Cphne\PsrTests\Container;
 
 use Cphne\PsrTests\Cache\CacheItemPool;
 use Cphne\PsrTests\Services\Outer;
+use Psr\Http\Server\MiddlewareInterface;
 
 class Container implements \Psr\Container\ContainerInterface
 {
     private array $services = [];
 
+    protected array $tagMapping = [
+        ServiceCainInterface::TAG_MIDDLEWARE => MiddlewareInterface::class,
+    ];
+
+    protected array $taggedServices = [];
+
     public function __construct(array $services = [])
     {
         $pool = new CacheItemPool();
 
+        foreach ($services as $possibleTaggedService) {
+            $reflection = new \ReflectionClass($possibleTaggedService);
+            $interfaces = array_keys($reflection->getInterfaces());
+            foreach ($this->tagMapping as $tag => $taggedInterface) {
+                $key = array_search($taggedInterface, $interfaces, true);
+                if ($key !== false) {
+                    $this->taggedServices[$tag][] = $possibleTaggedService;
+                }
+            }
+        }
+
         foreach ($services as $fqdn) {
             $item = $pool->getItem($fqdn);
-            if(!$item->isHit()) {
+            if (!$item->isHit()) {
                 $service = $this->wire($fqdn);
                 $item->set($service);
                 $pool->saveDeferred($item);
@@ -56,17 +74,32 @@ class Container implements \Psr\Container\ContainerInterface
         $reflection = new \ReflectionClass($fqdn);
         $test = $reflection->getConstructor();
         if ((is_null($test))) {
-            return new $fqdn();
+            $service = new $fqdn();
+        } else {
+            $params = $test->getParameters();
+            $dependencies = [];
+            foreach ($params as $param) {
+                $type = $param->getType()->getName();
+                $dependency = $this->wire($type);
+                $this->services[$type] = $dependency;
+                $dependencies[] = $dependency;
+            }
+            $service = new $fqdn(...$dependencies);
         }
-        $params = $test->getParameters();
-        $services = [];
-        foreach ($params as $param) {
-            $type = $param->getType()->getName();
-            $service = $this->wire($type);
-            $this->services[$type] = $service;
-            $services[] = $service;
+        if (!$reflection->implementsInterface(ServiceCainInterface::class)) {
+            return $service;
         }
-
-        return new $fqdn(...$services);
+        /* @var ServiceCainInterface $service */
+        foreach ($service->getChains() as $tag => $method) {
+            if (!method_exists($service, $method)) {
+                throw new \RuntimeException(
+                    "Can't add services. Method " . $method . " does not exist or ist not callable"
+                );
+            }
+            foreach ($this->taggedServices[$tag] as $taggedService) {
+                $service->$method($this->get($taggedService));
+            }
+        }
+        return $service;
     }
 }

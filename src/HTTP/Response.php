@@ -13,6 +13,8 @@ class Response extends Message implements ResponseInterface
 {
     protected string $reasonPhrase;
 
+    protected bool $processingFinished = false;
+
     protected array $phrases = [
         // INFORMATIONAL CODES
         100 => 'Continue',
@@ -131,4 +133,24 @@ class Response extends Message implements ResponseInterface
         }
         echo $this->body->getContents();
     }
+
+    /**
+     * @return bool
+     */
+    public function isProcessingFinished(): bool
+    {
+        return $this->processingFinished;
+    }
+
+    /**
+     * @param bool $processingFinished
+     * @return Response
+     */
+    public function setProcessingFinished(bool $processingFinished): Response
+    {
+        $this->processingFinished = $processingFinished;
+        return $this;
+    }
+
+
 }

@@ -2,6 +2,7 @@
 
 namespace Cphne\PsrTests\Container;
 
+use Cphne\PsrTests\Cache\CacheItemPool;
 use Cphne\PsrTests\Services\Outer;
 
 class Container implements \Psr\Container\ContainerInterface
@@ -10,10 +11,20 @@ class Container implements \Psr\Container\ContainerInterface
 
     public function __construct(array $services = [])
     {
+        $pool = new CacheItemPool();
+
         foreach ($services as $fqdn) {
-            $service = $this->wire($fqdn);
+            $item = $pool->getItem($fqdn);
+            if(!$item->isHit()) {
+                $service = $this->wire($fqdn);
+                $item->set($service);
+                $pool->saveDeferred($item);
+            } else {
+                $service = $item->get();
+            }
             $this->services[$fqdn] = $service;
         }
+        $pool->commit();
     }
 
     /**

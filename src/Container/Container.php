@@ -1,17 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cphne\PsrTests\Container;
 
 use Cphne\PsrTests\Cache\CacheItemPool;
-use Cphne\PsrTests\Services\Outer;
+use Cphne\PsrTests\Listeners\ListenerInterface;
+use Psr\EventDispatcher\ListenerProviderInterface;
 use Psr\Http\Server\MiddlewareInterface;
 
+/**
+ * Class Container
+ * @package Cphne\PsrTests\Container
+ */
 class Container implements \Psr\Container\ContainerInterface
 {
     private array $services = [];
 
     protected array $tagMapping = [
         ServiceCainInterface::TAG_MIDDLEWARE => MiddlewareInterface::class,
+        ServiceCainInterface::TAG_LISTENER_PROVIDER => ListenerProviderInterface::class
     ];
 
     protected array $taggedServices = [];
@@ -80,7 +88,11 @@ class Container implements \Psr\Container\ContainerInterface
             $dependencies = [];
             foreach ($params as $param) {
                 $type = $param->getType()->getName();
-                $dependency = $this->wire($type);
+                if($type === Container::class) {
+                    $dependency = $this;
+                } else {
+                    $dependency = $this->wire($type);
+                }
                 $this->services[$type] = $dependency;
                 $dependencies[] = $dependency;
             }

@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Cphne\PsrTests\HTTP;
-
 
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -106,5 +104,4 @@ class UploadedFile implements UploadedFileInterface
     {
         return new \RuntimeException("File has been moved previously.");
     }
-
 }

@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Cphne\PsrTests\Controller;
-
 
 /**
  * Class AbstractController
@@ -20,7 +20,7 @@ class AbstractController
         if (!str_starts_with(DIRECTORY_SEPARATOR, $templatePath)) {
             $templatePath = DIRECTORY_SEPARATOR . $templatePath;
         }
-        $content = file_get_contents("public/html" . $templatePath . ".html");
+        $content = file_get_contents('public/html' . $templatePath . '.html');
         foreach ($values as $key => $value) {
             $replacer = sprintf('{{%s}}', $key);
             $content = str_replace($replacer, $value, $content);

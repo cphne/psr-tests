@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Cphne\PsrTests\Cache;
-
 
 use Psr\Cache\CacheItemInterface;
 
@@ -155,5 +153,4 @@ class CacheItemPool implements \Psr\Cache\CacheItemPoolInterface
         );
         return $closure($key, $value, $hit);
     }
-
 }

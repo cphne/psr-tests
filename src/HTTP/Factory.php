@@ -69,7 +69,7 @@ class Factory implements
         if (is_string($uri)) {
             $uri = $this->createUri($uri);
         } elseif (!$uri instanceof UriInterface) {
-            throw new \InvalidArgumentException('$uri must be either one of string or '.UriInterface::class);
+            throw new \InvalidArgumentException('$uri must be either one of string or ' . UriInterface::class);
         }
 
         return new Request(

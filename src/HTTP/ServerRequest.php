@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Cphne\PsrTests\HTTP;
-
 
 use Cphne\PsrTests\Exceptions\NotImplementedException;
 use Cphne\PsrTests\Services\Deserializer\Deserializer;
@@ -153,6 +151,4 @@ class ServerRequest extends Request implements ServerRequestInterface
         }
         return $parsedBody;
     }
-
-
 }

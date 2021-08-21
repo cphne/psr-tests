@@ -151,6 +151,4 @@ class Response extends Message implements ResponseInterface
         $this->processingFinished = $processingFinished;
         return $this;
     }
-
-
 }

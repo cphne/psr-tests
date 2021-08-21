@@ -2,9 +2,6 @@
 
 namespace Cphne\PsrTests\HTTP;
 
-
-
-
 use Psr\Http\Message\StreamInterface;
 use RuntimeException;
 
@@ -12,7 +9,8 @@ use RuntimeException;
  * Class Stream
  * @package Cphne\PsrTests\HTTP
  */
-class Stream implements StreamInterface{
+class Stream implements StreamInterface
+{
     private $resource;
 
     private array|false $stats = false;

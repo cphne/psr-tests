@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Cphne\PsrTests\HTTP;
 
-
+use JetBrains\PhpStorm\Pure;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -107,7 +108,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function getScheme()
+    public function getScheme(): string
     {
         return $this->scheme;
     }
@@ -115,7 +116,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function getAuthority()
+    public function getAuthority(): string
     {
         $authority = $this->user . '@' . $this->host; // . ':' . $this->port;
         if ($this->isStandardPort()) {
@@ -127,7 +128,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function getUserInfo()
+    public function getUserInfo(): string
     {
         $userInfo = $this->user ?? "";
         if (!empty($this->pass)) {
@@ -139,7 +140,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function getHost()
+    #[Pure] public function getHost(): string
     {
         return strtolower($this->host) ?? "";
     }
@@ -147,7 +148,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function getPort()
+    public function getPort(): ?int
     {
         return ($this->isStandardPort()) ? null : $this->port;
     }
@@ -155,7 +156,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function getPath()
+    public function getPath(): string
     {
         return $this->path;
     }
@@ -163,7 +164,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function getQuery()
+    public function getQuery(): string
     {
         return $this->query ?? "";
     }
@@ -171,7 +172,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function getFragment()
+    public function getFragment(): ?string
     {
         return $this->fragment;
     }
@@ -179,7 +180,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withScheme($scheme)
+    #[Pure] public function withScheme($scheme): static
     {
         return new static(
             $scheme,
@@ -196,7 +197,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withUserInfo($user, $password = null)
+    #[Pure] public function withUserInfo($user, $password = null): static
     {
         return new static(
             $this->scheme,
@@ -213,7 +214,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withHost($host)
+    #[Pure] public function withHost($host): static
     {
         return new static(
             $this->scheme,
@@ -230,7 +231,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withPort($port)
+    public function withPort($port): static
     {
         if ($port < 0 || $port > 65353) {
             throw new \InvalidArgumentException("Port must be inside the established range.");
@@ -250,7 +251,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withPath($path)
+    #[Pure] public function withPath($path): static
     {
         return new static(
             $this->scheme,
@@ -267,7 +268,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withQuery($query)
+    #[Pure] public function withQuery($query): static
     {
         return new static(
             $this->scheme,
@@ -284,7 +285,7 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function withFragment($fragment)
+    #[Pure] public function withFragment($fragment): static
     {
         return new static(
             $this->scheme,
@@ -301,21 +302,21 @@ class Uri implements UriInterface
     /**
      * @inheritDoc
      */
-    public function __toString()
+    #[Pure] public function __toString(): string
     {
         $uri = $this->scheme . "://";
         $userInfo = $this->getUserInfo();
         $uri .= $userInfo . ((!empty($userInfo)) ? "@" : "");
         $uri .= $this->host;
         $uri .= (!empty($this->port)) ? ":" . $this->port : "";
-        $uri .= !str_starts_with($this->path, "/") && !empty($this->path)? "/" : "";
+        $uri .= !str_starts_with($this->path, "/") && !empty($this->path) ? "/" : "";
         $uri .= $this->path;
         $uri .= (!empty($this->query)) ? "?" . $this->query : "";
         $uri .= (!empty($this->fragment)) ? "#" . $this->fragment : "";
         return $uri;
     }
 
-    protected static function getFullUri(array $server): string
+    #[Pure] protected static function getFullUri(array $server): string
     {
         $use_forwarded_host = true;
         $ssl = (!empty($server['HTTPS']) && $server['HTTPS'] === 'on');
@@ -328,10 +329,10 @@ class Uri implements UriInterface
         return $protocol . '://' . $host . $server['REQUEST_URI'];
     }
 
-    protected function isStandardPort(): bool
+    #[Pure] protected function isStandardPort(): bool
     {
         return !empty($this->port) && !empty($this->scheme) && $this->portMapping[strtolower(
-                $this->scheme
-            )] === $this->port;
+            $this->scheme
+        )] === $this->port;
     }
 }

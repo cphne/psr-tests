@@ -1,13 +1,11 @@
 <?php
 
-
 namespace Cphne\PsrTests\HTTP;
 
 use InvalidArgumentException;
 use JetBrains\PhpStorm\Pure;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
-
 
 /**
  * Class Message
@@ -64,7 +62,8 @@ class Message implements MessageInterface
      * @inheritDoc
      */
     #[Pure] public function hasHeader($name): bool
-    {// TODO optimize
+    {
+// TODO optimize
         $lowerKeys = array_change_key_case($this->headers, CASE_LOWER);
         return array_key_exists(strtolower($name), $lowerKeys);
     }
@@ -98,8 +97,7 @@ class Message implements MessageInterface
     public function withHeader(
         $name,
         $value
-    ): static // TODO \InvalidArgumentException for invalid header names or values.
-    {
+    ): static { // TODO \InvalidArgumentException for invalid header names or values.
         $key = $this->getHeaderKey($name);
         $key ?? throw new InvalidArgumentException("Header " . $name . " does not exist in original array");
         $headers[$key] = $value;

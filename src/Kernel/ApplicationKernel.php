@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cphne\PsrTests\Kernel;
 
 use Cphne\PsrTests\Cache\CacheItemPool;

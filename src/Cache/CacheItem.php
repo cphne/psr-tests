@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Cphne\PsrTests\Cache;
-
 
 class CacheItem implements \Psr\Cache\CacheItemInterface
 {
@@ -74,5 +72,4 @@ class CacheItem implements \Psr\Cache\CacheItemInterface
 
         return $this;
     }
-
 }

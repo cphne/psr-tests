@@ -33,7 +33,7 @@ class StreamFactory implements StreamFactoryInterface
      */
     public function createStreamFromFile(string $filename, string $mode = 'r'): StreamInterface
     {
-        $file = fopen($filename, $mode.'b');
+        $file = fopen($filename, $mode . 'b');
 
         return $this->createStreamFromResource($file);
     }

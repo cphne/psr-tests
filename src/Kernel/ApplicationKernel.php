@@ -42,10 +42,13 @@ class ApplicationKernel implements KernelInterface
 
         ob_start();
         $finder = new ClassFinder();
-        $fqdns = $finder->find('Server');
+        $fqdns = [];
+        $fqdns[] = $finder->find('Listeners');
+        $fqdns[] = array_reverse($finder->find('EventDispatcher'));
+        $fqdns[] = $finder->find('Server');
         $pool = new CacheItemPool();
         $pool->clear();
-        $this->container = new Container($fqdns);
+        $this->container = new Container(array_merge([], ...$fqdns));
     }
 
     /**

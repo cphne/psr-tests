@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Cphne\PsrTests\Services\Finder;
-
 
 /**
  * Class ClassFinder
@@ -13,9 +13,9 @@ class ClassFinder implements FinderInterface
 
     /**
      * @param $subject
-     * @return mixed
+     * @return array
      */
-    public function find($subject): mixed
+    public function find($subject): array
     {
         if (!str_starts_with($subject, DIRECTORY_SEPARATOR)) {
             // TODO alternative to $_SERVER
@@ -30,14 +30,18 @@ class ClassFinder implements FinderInterface
         $dh = opendir($subject);
         $fqdns = [];
         while (($file = readdir($dh)) !== false) {
-            if (in_array($file, [".", ".."])) {
+            if (in_array($file, ['.', '..'])) {
                 continue;
             }
             $path = $subject . DIRECTORY_SEPARATOR . $file;
             if (filetype($path) === "dir") {
                 $fqdns = array_merge($fqdns, $this->find($path));
             } else {
-                $fqdns[] = $this->getFqdn($path);
+                $fqdn = $this->getFqdn($path);
+                if (is_null($fqdn)) {
+                    continue;
+                }
+                $fqdns[] = $fqdn;
             }
         }
         return $fqdns;
@@ -45,16 +49,20 @@ class ClassFinder implements FinderInterface
 
     /**
      * @param string $filepath
-     * @return string
+     * @return string|null
      */
-    private function getFqdn(string $filepath): string
+    private function getFqdn(string $filepath): ?string
     {
         $content = file_get_contents($filepath);
         $tokens = \PhpToken::tokenize($content);
         $classLine = null;
         $namespaceLine = null;
-        while (is_null($classLine) && ($token = array_shift($tokens)) !== false) {
+        while (is_null($classLine) && ($token = array_shift($tokens)) !== null) {
             /* @var \PhpToken $token */
+            if ($token->is(T_INTERFACE) || $token->is(T_ABSTRACT) || $token->is(T_TRAIT)) {
+                return null;
+            }
+
             if ($token->is(T_NAMESPACE)) {
                 $namespaceLine = $token->line;
             }
@@ -74,10 +82,9 @@ class ClassFinder implements FinderInterface
             }
             $splFile->next();
         }
-        $parts = explode(" ", $class);
+        $parts = explode(' ', $class);
         $class = $parts[1];
-        $namespace = str_replace("namespace ", "", $namespace);
-        $namespace = str_replace(";", "", $namespace);
+        $namespace = str_replace(['namespace ', ';'], '', $namespace);
         return trim($namespace) . "\\" . $class;
     }
 }

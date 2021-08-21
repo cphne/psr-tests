@@ -23,6 +23,20 @@ class ApplicationKernel implements KernelInterface
      */
     private ContainerInterface $container;
 
+    private ApplicationConfig $config;
+
+    /**
+     * ApplicationKernel constructor.
+     */
+    public function __construct()
+    {
+        $dotenv = new DotEnv('.env');
+        $dotenv->load();
+
+        $this->config = new ApplicationConfig();
+    }
+
+
     /**
      * @throws ErrorException
      */
@@ -43,9 +57,13 @@ class ApplicationKernel implements KernelInterface
         ob_start();
         $finder = new ClassFinder();
         $fqdns = [];
-        $fqdns[] = $finder->find('Listeners');
-        $fqdns[] = array_reverse($finder->find('EventDispatcher'));
-        $fqdns[] = $finder->find('Server');
+        foreach ($this->config->getServiceDirs() as $dir) {
+            if ($dir === "EventDispatcher") {
+                $fqdns[] = array_reverse($finder->find($dir));
+            } else {
+                $fqdns[] = $finder->find($dir);
+            }
+        }
         $pool = new CacheItemPool();
         $pool->clear();
         $this->container = new Container(array_merge([], ...$fqdns));

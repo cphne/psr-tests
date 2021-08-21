@@ -1,10 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Cphne\PsrTests\Server;
 
 use Cphne\PsrTests\Container\ServiceCainInterface;
+use Cphne\PsrTests\EventDispatcher\EventDispatcher;
+use Cphne\PsrTests\Events\RequestEvent;
+use Cphne\PsrTests\Events\ResponseEvent;
 use Cphne\PsrTests\HTTP\Factory;
 use Cphne\PsrTests\Logger\StdoutLogger;
+use JetBrains\PhpStorm\ArrayShape;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -21,7 +27,8 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, Servic
 
     public function __construct(
         private Factory $factory,
-        private StdoutLogger $logger
+        private StdoutLogger $logger,
+        private EventDispatcher $dispatcher,
     ) {
     }
 
@@ -30,15 +37,17 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, Servic
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        $this->dispatcher->dispatch(new RequestEvent($request));
         $this->response = $this->factory->createResponse();
         try {
             foreach ($this->middleware as $middleware) {
-                /* @var $middleware MiddlewareInterface */
+                /* @var MiddlewareInterface $middleware */
                 $this->response = $middleware->process($request, $this);
                 if ($this->response->isProcessingFinished()) {
                     break;
                 }
             }
+            $this->dispatcher->dispatch(new ResponseEvent($this->response));
             $this->sendResponse($this->response);
         } catch (\Throwable $exception) {
             $code = $exception->getCode();
@@ -46,7 +55,7 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, Servic
                 $code = 500;
             }
             $content = sprintf(
-                "<h1>%s - %s</h1><h2>%s</h2><hr>%s",
+                '<h1>%s - %s</h1><h2>%s</h2><hr>%s',
                 $code,
                 get_class($exception),
                 $exception->getMessage(),
@@ -54,6 +63,7 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, Servic
             );
             $response = $this->factory->createResponse($code)
                 ->withBody($this->factory->createStream($content));
+            $this->dispatcher->dispatch(new ResponseEvent($response));
             $this->sendResponse($response);
         }
 
@@ -61,9 +71,9 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, Servic
     }
 
 
-    public function getChains(): array
+    #[ArrayShape([self::TAG_MIDDLEWARE => 'string'])] public function getChains(): array
     {
-        return [self::TAG_MIDDLEWARE => "addMiddleware"];
+        return [self::TAG_MIDDLEWARE => 'addMiddleware'];
     }
 
     /**
@@ -93,6 +103,4 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, Servic
     {
         return $this->response;
     }
-
-
 }

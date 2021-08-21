@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Cphne\PsrTests\Container;
-
 
 /**
  * Interface ServiceCainInterface
@@ -11,10 +11,9 @@ namespace Cphne\PsrTests\Container;
 interface ServiceCainInterface
 {
 
-    /**
-     *
-     */
-    public const TAG_MIDDLEWARE = "middleware";
+    public const TAG_MIDDLEWARE = 'middleware';
+
+    public const TAG_LISTENER_PROVIDER = 'listenerProvider';
 
     /**
      * @return array

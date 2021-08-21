@@ -88,7 +88,7 @@ class Container implements \Psr\Container\ContainerInterface
             $dependencies = [];
             foreach ($params as $param) {
                 $type = $param->getType()->getName();
-                if($type === Container::class) {
+                if ($type === __CLASS__) {
                     $dependency = $this;
                 } else {
                     $dependency = $this->wire($type);

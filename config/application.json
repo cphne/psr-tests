@@ -1,0 +1,12 @@
+{
+  "environment": "development",
+  "logs": "var/logs",
+  "cache": "var/cache",
+  "services": {
+    "directories": ["Listeners", "EventDispatcher", "Server"],
+    "tags": {
+      "middleware": "Psr\\Http\\Server\\MiddlewareInterface",
+      "listener-provider": "Psr\\EventDispatcher\\ListenerProviderInterface"
+    }
+  }
+}

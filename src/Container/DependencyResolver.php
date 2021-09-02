@@ -8,15 +8,29 @@ namespace Cphne\PsrTests\Container;
  * Class DependencyResolver
  * @package Cphne\PsrTests\Container
  */
-class DependencyResolver
+class DependencyResolver implements DependencyResolverInterface
 {
 
+    /**
+     * @var array
+     */
     private array $queue;
 
+    /**
+     * @var array
+     */
     private array $services = [];
 
+    /**
+     * @var array
+     */
     private array $taggedServices = [];
 
+    /**
+     * DependencyResolver constructor.
+     * @param array $fqdns
+     * @param array $tags
+     */
     public function __construct(
         array $fqdns,
         private array $tags
@@ -24,11 +38,14 @@ class DependencyResolver
         $this->queue = $fqdns;
     }
 
-    public function resolve()
+    /**
+     * @return array
+     * @throws \ReflectionException
+     */
+    public function resolve(): array
     {
-        $runs = 0;
-        while (($fqdn = array_shift($this->queue)) !== null && $runs < 50) {
-            $runs++;
+        while (($fqdn = array_shift($this->queue)) !== null) {
+            // Container instance will not be constructed, so resolving is finished at this point
             if ($fqdn === Container::class) {
                 $this->addService($fqdn);
                 continue;
@@ -36,42 +53,45 @@ class DependencyResolver
             $dependencies = [];
             $reflection = new \ReflectionClass($fqdn);
             $interfaces = array_keys($reflection->getInterfaces());
+            // Check interfaces of potential service whether service is tagged
             foreach ($this->tags as $tag => $taggedInterface) {
                 $key = array_search($taggedInterface, $interfaces, true);
+                // If Service is not already marked for this tag, add to list
                 if (
                     $key !== false
                     && (!array_key_exists($tag, $this->taggedServices) || !in_array(
-                            $fqdn,
-                            $this->taggedServices[$tag],
-                            true
-                        ))
+                        $fqdn,
+                        $this->taggedServices[$tag],
+                        true
+                    ))
                 ) {
                     $this->taggedServices[$tag][] = $fqdn;
-                    # $dependencies[] = $fqdn;
                     $this->push($fqdn);
                 }
             }
             $constructor = $reflection->getConstructor();
             if (!is_null($constructor)) {
+                // Check constructor argument's
                 foreach ($constructor->getParameters() as $parameter) {
                     $type = $parameter->getType();
                     /* @var \ReflectionNamedType $type */
+                    // Builtin Types are not supported yet
                     if ($type->isBuiltin()) {
                         throw new \RuntimeException(
                             sprintf('Type %s of %s can not be wired.', $type->getName(), $fqdn)
                         );
                     }
+                    // Constructor arguments are the dependencies, add them
                     $dependencies[] = $type->getName();
 
                     // TODO check type is object, not array for example
+                    // Add dependency to queue for resolving it's dependencies
                     $this->push($type->getName());
                 }
             }
             $this->addService($fqdn, $dependencies);
         }
-        if ($runs === 49) {
-            throw new \RuntimeException("fuck");
-        }
+        // Sort array so that services with the least amount of dependencies are constructed first
         uasort(
             $this->services,
             static function (array $a, array $b) {
@@ -81,46 +101,20 @@ class DependencyResolver
         return $this->services;
     }
 
+    /**
+     * @return array
+     */
     public function getTaggedServices(): array
     {
         return $this->taggedServices;
     }
 
-    public function resolve2()
-    {
-        while (($fqdn = array_shift($this->queue)) !== null) {
-            if ($fqdn === Container::class) {
-                $this->addService($fqdn);
-                continue;
-            }
-            $reflection = new \ReflectionClass($fqdn);
-            $interfaces = array_keys($reflection->getInterfaces());
-            foreach ($this->tags as $tag => $taggedInterface) {
-                $key = array_search($taggedInterface, $interfaces, true);
-                if ($key !== false) {
-                    $this->taggedServices[$tag][] = $fqdn;
-                    $this->push($fqdn);
-                }
-            }
-            $constructor = $reflection->getConstructor();
-            if (!is_null($constructor)) {
-                foreach ($constructor->getParameters() as $parameter) {
-                    $type = $parameter->getType();
-                    /* @var \ReflectionNamedType $type */
-                    if ($type->isBuiltin()) {
-                        throw new \RuntimeException(
-                            sprintf('Type %s of %s can not be wired.', $type->getName(), $fqdn)
-                        );
-                    }
-                    // TODO check type is object, not array for example
-                    $this->push($type->getName());
-                }
-            }
-            $this->addService($fqdn);
-        }
-        return $this->services;
-    }
-
+    /**
+     * Adds a resolved Service and it's dependencies to the resulting array
+     *
+     * @param string $fqdn
+     * @param array $dependencies
+     */
     private function addService(string $fqdn, array $dependencies = [])
     {
         if (!in_array($fqdn, $this->services)) {
@@ -128,6 +122,11 @@ class DependencyResolver
         }
     }
 
+    /**
+     * Adds a FQDN to the queue that still needs to be resolved
+     *
+     * @param string $fqdn
+     */
     private function push(string $fqdn): void
     {
         if (!in_array($fqdn, $this->queue, true) && !in_array($fqdn, $this->services, true)) {

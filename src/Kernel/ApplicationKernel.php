@@ -58,11 +58,7 @@ class ApplicationKernel implements KernelInterface
         $finder = new ClassFinder();
         $fqdns = [];
         foreach ($this->config->getServiceDirs() as $dir) {
-            if ($dir === "EventDispatcher") {
-                $fqdns[] = array_reverse($finder->find($dir));
-            } else {
-                $fqdns[] = $finder->find($dir);
-            }
+            $fqdns[] = $finder->find($dir);
         }
         $pool = new CacheItemPool();
         $pool->clear();

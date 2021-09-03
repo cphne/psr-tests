@@ -6,7 +6,6 @@ namespace Cphne\PsrTests\Listeners;
 
 use Cphne\PsrTests\Events\ExceptionEvent;
 use Cphne\PsrTests\HTTP\Factory;
-use Cphne\PsrTests\HTTP\Stream;
 
 /**
  * Class ExceptionListener
@@ -15,14 +14,23 @@ use Cphne\PsrTests\HTTP\Stream;
 class ExceptionListener implements ListenerInterface
 {
 
-    public function handleExceptionEvent(ExceptionEvent $exceptionEvent) {
+    /**
+     * @param ExceptionEvent $exceptionEvent
+     */
+    public function handleExceptionEvent(ExceptionEvent $exceptionEvent): void
+    {
         $factory = new Factory();
-        var_dump($exceptionEvent->getThrowable()->getMessage());
-        var_dump($exceptionEvent->getThrowable()->getTrace());
+        $throwable = $exceptionEvent->getThrowable();
+        $parameters = ['code' => $throwable->getCode(), 'message' => $throwable->getMessage()];
+        $content = file_get_contents('src/Exceptions/Templates/throwable.html');
+        foreach ($parameters as $key => $value) {
+            $replacer = sprintf('{{%s}}', $key);
+            $content = str_replace($replacer, (string)$value, $content);
+        }
         $code = empty($exceptionEvent->getThrowable()->getCode()) ? 500 : $exceptionEvent->getThrowable()->getCode();
         $response = $exceptionEvent->getResponse()
             ->withStatus($code)
-            ->withBody($factory->createStream($exceptionEvent->getThrowable()->getTraceAsString()));
+            ->withBody($factory->createStream($content));
         $exceptionEvent->setResponse($response);
     }
 

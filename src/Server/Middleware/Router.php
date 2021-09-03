@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Cphne\PsrTests\Server\Middleware;
 
-
 use Cphne\PsrTests\Attributes\Router\Route;
+use Cphne\PsrTests\Controller\ControllerResponseInterface;
+use Cphne\PsrTests\Exceptions\HTTP\NotFoundException;
 use Cphne\PsrTests\HTTP\Factory;
 use Cphne\PsrTests\Logger\StdoutLogger;
 use Cphne\PsrTests\Services\Finder\ClassFinder;
@@ -17,7 +19,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Class Router
  * @package Cphne\PsrTests\Server\Middleware
  */
-class Router implements MiddlewareInterface
+class Router extends AbstractMiddleware implements MiddlewareInterface
 {
 
     /**
@@ -42,27 +44,23 @@ class Router implements MiddlewareInterface
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
      * @return ResponseInterface
+     * @throws NotFoundException
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $this->logger->info("Router pass.");
         $uri = $request->getUri();
         if (!array_key_exists($uri->getPath(), $this->routes)) {
-            $response = $handler->getResponse()
-                ->withStatus(404)
-                ->withBody($this->factory->createStream("<h1>404</h1>"))
-                ->setProcessingFinished(true);
-            return $response;
+            throw new NotFoundException();
         }
         $meta = $this->routes[$uri->getPath()];
         $controller = new $meta["controller"]();
         $method = $meta["method"];
-        $content = $controller->$method();
-        $response = $handler->getResponse()
-            ->withStatus(200)
-            ->withBody($this->factory->createStream($content))
-            ->setProcessingFinished(true);
-        return $response;
+        $controllerResponse = $controller->$method();
+        /* @var $controllerResponse ControllerResponseInterface */
+        return $this->response
+            ->withStatus($controllerResponse->getCode())
+            ->withBody($this->factory->createStream($controllerResponse->getBody()));
     }
 
     private function getRoutes()
@@ -88,5 +86,4 @@ class Router implements MiddlewareInterface
             }
         }
     }
-
 }

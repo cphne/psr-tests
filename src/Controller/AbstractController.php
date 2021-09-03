@@ -13,18 +13,11 @@ class AbstractController
     /**
      * @param string $templatePath
      * @param array $values
-     * @return string
+     * @param int $code
+     * @return TemplateResponse
      */
-    public function render(string $templatePath, array $values): string
+    public function render(string $templatePath, array $values, int $code = 200): TemplateResponse
     {
-        if (!str_starts_with(DIRECTORY_SEPARATOR, $templatePath)) {
-            $templatePath = DIRECTORY_SEPARATOR . $templatePath;
-        }
-        $content = file_get_contents('public/html' . $templatePath . '.html');
-        foreach ($values as $key => $value) {
-            $replacer = sprintf('{{%s}}', $key);
-            $content = str_replace($replacer, $value, $content);
-        }
-        return $content;
+        return new TemplateResponse($templatePath, $values, $code);
     }
 }

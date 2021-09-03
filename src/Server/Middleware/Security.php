@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace Cphne\PsrTests\Server\Middleware;
-
 
 use Cphne\PsrTests\Logger\StdoutLogger;
 use Psr\Http\Message\ResponseInterface;
@@ -14,7 +14,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  * Class Security
  * @package Cphne\PsrTests\Server\Middleware
  */
-class Security implements MiddlewareInterface
+class Security extends AbstractMiddleware implements MiddlewareInterface
 {
 
     /**
@@ -32,9 +32,7 @@ class Security implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $this->logger->info("Security pass.");
-        return $handler->getResponse();
+        $this->logger->info('Security pass.');
+        return $handler->handle($request);
     }
-
-
 }

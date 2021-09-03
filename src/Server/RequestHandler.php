@@ -6,6 +6,7 @@ namespace Cphne\PsrTests\Server;
 
 use Cphne\PsrTests\Container\ServiceCainInterface;
 use Cphne\PsrTests\EventDispatcher\EventDispatcher;
+use Cphne\PsrTests\Events\ExceptionEvent;
 use Cphne\PsrTests\Events\RequestEvent;
 use Cphne\PsrTests\Events\ResponseEvent;
 use Cphne\PsrTests\HTTP\Factory;
@@ -14,16 +15,17 @@ use JetBrains\PhpStorm\ArrayShape;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 /**
  * Class RequestHandler.
  */
-class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, ServiceCainInterface
+class RequestHandler implements RequestHandlerInterface, ServiceCainInterface
 {
 
     private array $middleware = [];
 
-    private ResponseInterface $response;
+    private bool $resolved = false;
 
     public function __construct(
         private Factory $factory,
@@ -38,36 +40,25 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, Servic
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $this->dispatcher->dispatch(new RequestEvent($request));
-        $this->response = $this->factory->createResponse();
+        $response = $this->factory->createResponse();
         try {
-            foreach ($this->middleware as $middleware) {
+            while (($middleware = array_shift($this->middleware)) !== null) {
                 /* @var MiddlewareInterface $middleware */
-                $this->response = $middleware->process($request, $this);
-                if ($this->response->isProcessingFinished()) {
-                    break;
-                }
+                $middleware->setResponse($response);
+                $response = $middleware->process($request, $this);
             }
-            $this->dispatcher->dispatch(new ResponseEvent($this->response));
-            $this->sendResponse($this->response);
         } catch (\Throwable $exception) {
-            $code = $exception->getCode();
-            if ($code === 0) {
-                $code = 500;
-            }
-            $content = sprintf(
-                '<h1>%s - %s</h1><h2>%s</h2><hr>%s',
-                $code,
-                get_class($exception),
-                $exception->getMessage(),
-                $exception->getTraceAsString()
-            );
-            $response = $this->factory->createResponse($code)
-                ->withBody($this->factory->createStream($content));
+            $event = new ExceptionEvent($exception);
+            $event->setResponse($response);
+            $this->dispatcher->dispatch($event);
+            $response = $event->getResponse();
+        }
+        if (!$this->resolved) {
             $this->dispatcher->dispatch(new ResponseEvent($response));
             $this->sendResponse($response);
+            $this->resolved = true;
         }
-
-        return $this->response;
+        return $response;
     }
 
 
@@ -94,13 +85,5 @@ class RequestHandler implements \Psr\Http\Server\RequestHandlerInterface, Servic
         echo (string)$response->getBody();
 
         return true;
-    }
-
-    /**
-     * @return ResponseInterface
-     */
-    public function getResponse(): ResponseInterface
-    {
-        return $this->response;
     }
 }
